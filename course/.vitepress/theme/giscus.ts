@@ -7,11 +7,13 @@ const is_dev = process.env.NODE_ENV === "development";
 
 export default defineComponent({
   setup() {
-    const route = useRoute();
-    const { isDark } = useData();
+    const { isDark, title, frontmatter } = useData();
 
     return () =>
-      is_dev
+      is_dev ||
+      !(typeof frontmatter.value.comments == "undefined"
+        ? true
+        : frontmatter.value.comments)
         ? h("div")
         : h(
             "div",
@@ -19,6 +21,8 @@ export default defineComponent({
               style: {
                 marginTop: "20px",
               },
+              key: title.value,
+              class: "giscus",
             },
             h(Giscus, {
               repo: "zigcc/zig-course",
@@ -32,7 +36,6 @@ export default defineComponent({
               inputPosition: "top",
               theme: isDark.value ? "dark" : "light",
               lang: "zh-CN",
-              term: route.path,
             }),
           );
   },

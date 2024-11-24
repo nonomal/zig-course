@@ -22,9 +22,9 @@ outline: deep
 
 编译并执行 Zig 文件中的所有测试用例。
 
-## `zig init-exe`
+## `zig init`
 
-这个命令用于初始化项目（可执行二进制文件），在当前路径下创建 `src/main.zig` 和 `build.zig` 两个文件。
+这个命令用于初始化项目，在当前路径下创建 `src/main.zig`、`build.zig` 和 `src/lib.zig` 三个文件。
 
 关于 `build.zig` 这个文件的内容涉及到了 zig 的构建系统，我们将会单独讲述。
 
@@ -33,34 +33,8 @@ outline: deep
 ├── build.zig
 └── src
     └── main.zig
+    └── lib.zig
 ```
-
-::: warning
-
-当前 `nightly` 版本的 zig 已经将 `zig init-exe` 和 `zig init-lib` 合并为一个命令 `zig init`。
-
-:::
-
-## `zig init-lib`
-
-如果你想写一个 zig 的库，那么可以使用该命令，在当前路径下创建 `src/main.zig` 和 `build.zig` 两个文件。
-
-::: tip 🅿️ 提示
-创建出来的 `main.zig` `build.zig` 和通过 `init-exe` 命令创建出来的 `main.zig` `build.zig` 并不相同。
-:::
-
-```sh
-.
-├── build.zig
-└── src
-    └── main.zig
-```
-
-::: warning
-
-当前 `nightly` 版本的 zig 已经将 `zig init-exe` 和 `zig init-lib` 合并为一个命令 `zig init`。
-
-:::
 
 ## `zig ast-check`
 
@@ -104,23 +78,19 @@ outline: deep
 
 ## `zig fetch`
 
-::: warning
-
-该命令为 `nightly` 版本加入，用于将包添加到全局缓存并打印包的hash。
-
-:::
+该命令用于获取包的 hash 或者添加包到 `build.zig.zon` 中！
 
 ```sh
-$ zig fetch https://github.com/limine-bootloader/limine-zig/archive/trunk.tar.gz
+$ zig fetch https://github.com/webui-dev/zig-webui/archive/main.tar.gz
 12202809180bab2c7ae3382781b2fc65395e74b49d99ff2595f3fea9f7cf66cfa963
 ```
 
 当然如果你想将包直接添加到 `zon` 中，你可以附加 `--save` 参数来实现效果：
 
 ```zig
-zig fetch --save https://github.com/limine-bootloader/limine-zig/archive/trunk.tar.gz
+zig fetch --save https://github.com/webui-dev/zig-webui/archive/main.tar.gz
 // 当包提供 name 时，会自动使用包的 name
-// 当然，你也可以指定包的 name，使用 --save=limine
+// 当然，你也可以指定包的 name，使用 --save=webuizig
 ```
 
 除了上述命令之外，还有一些其他的命令和选项可以在 Zig 的官方文档中找到。随着 Zig 语言的不断发展，可能会有新的命令和功能加入，所以建议定期查看官方文档来获取最新信息。

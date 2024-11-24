@@ -28,7 +28,7 @@ outline: deep
 | `usize`        | `uintptr_t` `size_t` | 无符号指针大小的整数           |
 | `comptime_int` | 无                   | 编译期的整数，整数字面量的类型 |
 
-<<<@/code/11/number.zig#type
+<<<@/code/release/number.zig#type
 
 同时 zig 支持任意位宽的整数，使用 `u` 或者 `i` 后面加数字即可，例如 `i7` 代表有符号的7位整数，整数类型允许的最大位宽为`65535`。
 
@@ -103,7 +103,7 @@ thread 2456131 panic: division by zero
 (process terminated by signal)
 ```
 
-### 溢出:
+### 溢出
 
 zig 中，有以下默认操作可以导致溢出：
 
@@ -112,9 +112,9 @@ zig 中，有以下默认操作可以导致溢出：
 - `-`（取反）
 - `*`（乘法）
 - `/`（除法）
-- [`@divTrunc`](https://ziglang.org/documentation/0.11.0/#divTrunc)（除法）
-- [`@divFloor`](https://ziglang.org/documentation/0.11.0/#divFloor)（除法）
-- [`@divExact`](https://ziglang.org/documentation/0.11.0/#divExact)（除法）
+- [`@divTrunc`](https://ziglang.org/documentation/master/#divTrunc)（除法）
+- [`@divFloor`](https://ziglang.org/documentation/master/#divFloor)（除法）
+- [`@divExact`](https://ziglang.org/documentation/master/#divExact)（除法）
 
 还有在标准库 `@import("std").math` 中的函数可能导致溢出发生。
 
@@ -124,10 +124,10 @@ zig 中，有以下默认操作可以导致溢出：
 
 内置溢出处理函数：
 
-- [`@addWithOverflow`](https://ziglang.org/documentation/0.11.0/#addWithOverflow)
-- [`@subWithOverflow`](https://ziglang.org/documentation/0.11.0/#subWithOverflow)
-- [`@mulWithOverflow`](https://ziglang.org/documentation/0.11.0/#mulWithOverflow)
-- [`@shlWithOverflow`](https://ziglang.org/documentation/0.11.0/#shlWithOverflow)
+- [`@addWithOverflow`](https://ziglang.org/documentation/master/#addWithOverflow)
+- [`@subWithOverflow`](https://ziglang.org/documentation/master/#subWithOverflow)
+- [`@mulWithOverflow`](https://ziglang.org/documentation/master/#mulWithOverflow)
+- [`@shlWithOverflow`](https://ziglang.org/documentation/master/#shlWithOverflow)
 
 这些内建函数返回一个元组，其中包含是否存在溢出（作为 `u1`）以及操作中可能溢出的位.
 
@@ -146,15 +146,15 @@ zig 中，有以下默认操作可以导致溢出：
 
 值得注意的是，`comptime_float` 具有 `f128` 的精度和运算。
 
-浮点字面量则是具有 _任意浮点类型_，如果没有分母会被转换为 _任意整数类型_ 。
+浮点字面量可以隐式转换为 _任意浮点类型_，如果没有小数部分的话还能够隐式转换为 _任意整数类型_ 。
 
-浮点运算时遵循 `Strict` 模式，但是可以使用 `@setFloatMode(.Optimized)` 切换到 `Optimized` 模式，有关浮点运算的模式，详见 [`@setFloatMode`](https://ziglang.org/documentation/0.11.0/#setFloatMode)。
+浮点运算时遵循 `Strict` 模式，但是可以使用 `@setFloatMode(.Optimized)` 切换到 `Optimized` 模式，有关浮点运算的模式，详见 [`@setFloatMode`](https://ziglang.org/documentation/master/#setFloatMode)。
 
 ::: info 🅿️ 提示
 
 zig 并未像其他语言那样默认提供了 NaN、无穷大、负无穷大这些语法，如果需要使用它们，请使用标准库：
 
-<<<@/code/11/number.zig#float
+<<<@/code/release/number.zig#float
 
 :::
 
@@ -173,7 +173,7 @@ pub fn main() void {
 }
 ```
 
-你一定以为这个可以通过断言，0.1 + 0.2 很明显就应该是 0.3 嘛，但实际上在运行时会直接奔溃！
+你一定以为这个可以通过断言，0.1 + 0.2 很明显就应该是 0.3 嘛，但实际上在运行时会直接崩溃！
 
 :::
 
@@ -185,11 +185,11 @@ pub fn main() void {
 
 <!-- TODO: 对等类型解析 -->
 
-- `+|`：饱和加法，这涉及到[对等类型解析]，你现在只需要知道加法结果最多只是该类型的极限即可，例如 `u8` 类型的 255 + 1 后还是 255 。
+- `+|`：饱和加法，这涉及到[对等类型解析](../../advanced/type_cast.md#对等类型转换)，你现在只需要知道加法结果最多只是该类型的极限即可，例如 `u8` 类型的 255 + 1 后还是 255 。
 - `-|`：饱和减法，和上面一样，减法结果最小为该类型的极限。
 - `*|`：饱和乘法，同上，乘法结果最大或最小为该类型的极限。
 - `<<|`：饱和左移，同之前，结果为该类型的极限。
-- `++`：矩阵（数组）串联，需要两个矩阵（数组）是相同大小（长度）。
+- `++`：矩阵（数组）串联，需要两个矩阵（数组）内元素类型相同。
 - `**`：矩阵乘（数组）法，需要在编译期已知矩阵（数组）的大小（长度）和乘的倍数。
 
 运算的优先级：
@@ -212,6 +212,8 @@ or
 
 ::: tip 🅿️ 提示
 
-如果你有使用复数的需求，那么你需要自己实现相关的结构体了（我还未在社区发现高质量的相关包）。
+如果你有使用复数的需求，可以使用标准库中的 [`std.math.Complex`](https://ziglang.org/documentation/master/std/#std.math.complex.Complex)。
+
+<<<@/code/release/number.zig#complex
 
 :::
