@@ -17,7 +17,7 @@ outline: deep
 
 ::: info 🅿️ 提示
 
-对于 x86 和 x86_64 ，当前汇编语法为 AT＆T 语法，而不是更流行的 Intel 语法。这是由于技术限制，汇编解析由LLVM提供，其对 Intel 语法的支持存在 bug 且测试​​结果并不理想。
+对于 x86 和 x86_64，当前汇编语法为 AT＆T 语法，而不是更流行的 Intel 语法。这是由于技术限制，汇编解析由 LLVM 提供，其对 Intel 语法的支持存在 bug 且测试​​结果并不理想。
 
 在未来的某一天 Zig 可能有自己的汇编器。这将使汇编能够更加无缝地集成到语言中，并与流行的 Nasm 语法兼容。
 
@@ -41,25 +41,7 @@ outline: deep
 
 它的实际作用就和使用 `addAssemblyFile` 的效果类似，在编译期它们会被提取出来作为单独的汇编文件进行编译和链接。
 
-```zig
-const std = @import("std");
-
-comptime {
-    asm (
-        \\.global my_func;
-        \\.type my_func, @function;
-        \\my_func:
-        \\  lea (%rdi,%rsi,1),%eax
-        \\  retq
-    );
-}
-
-extern fn my_func(a: i32, b: i32) i32;
-
-pub fn main() void {
-    std.debug.print("{}\n", .{my_func(2, 5)});
-}
-```
+<<<@/code/release/assembly.zig#external_assembly
 
 以上这段函数中，我们通过全局汇编定义了一个汇编函数，以实现加法功能，并在 `main` 中实现了调用，如果你想了解更多这些相关的内容，你可以继续查询有关**调用约定**（**Calling convention**）的资料。
 
@@ -67,39 +49,7 @@ pub fn main() void {
 
 内联汇编给予了我们可以将 `low-level` 的汇编代码和高级语言相组合，实现更加高效或者更直白的操作。
 
-```zig
-pub fn main() noreturn {
-    const msg = "hello world\n";
-    _ = syscall3(SYS_write, STDOUT_FILENO, @intFromPtr(msg), msg.len);
-    _ = syscall1(SYS_exit, 0);
-    unreachable;
-}
-
-pub const SYS_write = 1;
-pub const SYS_exit = 60;
-
-pub const STDOUT_FILENO = 1;
-
-pub fn syscall1(number: usize, arg1: usize) usize {
-    return asm volatile ("syscall"
-        : [ret] "={rax}" (-> usize),
-        : [number] "{rax}" (number),
-          [arg1] "{rdi}" (arg1),
-        : "rcx", "r11"
-    );
-}
-
-pub fn syscall3(number: usize, arg1: usize, arg2: usize, arg3: usize) usize {
-    return asm volatile ("syscall"
-        : [ret] "={rax}" (-> usize),
-        : [number] "{rax}" (number),
-          [arg1] "{rdi}" (arg1),
-          [arg2] "{rsi}" (arg2),
-          [arg3] "{rdx}" (arg3),
-        : "rcx", "r11"
-    );
-}
-```
+<<<@/code/release/assembly.zig#inline_assembly
 
 上面这段代码是通过内联汇编实现在 x86-64 linux 下输出 `hello world`，接下来讲解一下它们的组成和使用。
 
@@ -118,7 +68,7 @@ asm volatile ("assembly code"
     );
 ```
 
-结构大体是这样的:
+结构大体是这样的：
 
 ```asm
 # 别忘记三个冒号，即便对应的部分不存在也需要有冒号
@@ -129,7 +79,7 @@ AssemblerTemplate
 ```
 
 1. 首先是一个内联汇编的语句，但它和普通的内联语句不同，它可以使用“占位符”，类似`%[value]`，这就是一个占位符，以 `%` 开头，如果需要使用寄存器，则需要使用两个 `%` ，例如使用 CR3 寄存器就是 `%%cr3`。
-2. 之后是一个输出位置，它表示你需要将值输出到哪里，也可以没有返回值，例如上方的示例中 `[ret] "={rax}" (-> usize)` 代表我们使用 `[ret]` 标记了返回值，并且返回值就是 rax 寄存器中的值，其后的 `(-> usize)` 代表我们整个内联汇编表达式需要返回一个值，当然这里如果是一个变量，就会将rax寄存器的值通过`[ret]`标记绑定到变量上。（注意，此处的 `=` 代表只能进行写入操作数，属于是一个约束。）
+2. 之后是一个输出位置，它表示你需要将值输出到哪里，也可以没有返回值，例如上方的示例中 `[ret] "={rax}" (-> usize)` 代表我们使用 `[ret]` 标记了返回值，并且返回值就是 rax 寄存器中的值，其后的 `(-> usize)` 代表我们整个内联汇编表达式需要返回一个值，当然这里如果是一个变量，就会将 rax 寄存器的值通过`[ret]`标记绑定到变量上。（注意，此处的 `=` 代表只能进行写入操作数，属于是一个约束。）
 3. 这是输入操作数，它和输出位置类似，但它可以存在多个输入，并且它也支持“占位符”和相关的约束。
 4. 这里是改动的寄存器，用于通知编译器，我们在执行此内联汇编会使用（或者称之为破坏更合适）的寄存器，默认包含了输入和输出寄存器。还有一个特殊标记 `memory`，它会通知编译器内联汇编会写入任意为声明的内存位置。
 
@@ -145,4 +95,4 @@ AssemblerTemplate
 
 :::
 
-了解更多？可以查看我的这篇文章 [Handle Interrupt on x86-64 kernel with zig](https://blog.nvimer.org/2023/11/12/handle-interrupt-on-x86-64-kernel-with-zig/)，这是一篇关于如何在 x86-64 内核上利用 zig 的特性实现中断处理的文章，在这其中我用了内联汇编，算是一个比较巧妙的例子。
+了解更多？可以查看我的这篇文章 [Handle Interrupt on x86-64 kernel with zig](https://nvimer.org/posts/handle-interrupt-on-x86-64-kernel-with-zig/)，这是一篇关于如何在 x86-64 内核上利用 zig 的特性实现中断处理的文章，在这其中我用了内联汇编，算是一个比较巧妙的例子。

@@ -8,8 +8,6 @@ const linux = std.os.linux;
 
 /// windows context 定义
 const windows_context = struct {
-    const poll = windows.poll;
-    const pollfd = windows.ws2_32.pollfd;
     const POLLIN: i16 = 0x0100;
     const POLLERR: i16 = 0x0001;
     const POLLHUP: i16 = 0x0002;
@@ -19,8 +17,6 @@ const windows_context = struct {
 
 /// linux context 定义
 const linux_context = struct {
-    const poll = linux.poll;
-    const pollfd = linux.pollfd;
     const POLLIN: i16 = 0x0001;
     const POLLERR: i16 = 0x0008;
     const POLLHUP: i16 = 0x0010;
@@ -30,8 +26,6 @@ const linux_context = struct {
 
 /// macOS context 定义
 const macos_context = struct {
-    const poll = std.os.darwin.poll;
-    const pollfd = std.os.darwin.pollfd;
     const POLLIN: i16 = 0x0001;
     const POLLERR: i16 = 0x0008;
     const POLLHUP: i16 = 0x0010;
@@ -64,7 +58,10 @@ pub fn main() !void {
     // 存储 accept 拿到的 connections
     var connections: [max_sockets]?net.Server.Connection = undefined;
     // sockfds 用于存储 pollfd, 用于传递给 poll 函数
-    var sockfds: [max_sockets]context.pollfd = undefined;
+    var sockfds: [max_sockets]if (builtin.os.tag == .windows)
+        windows.ws2_32.pollfd
+    else
+        std.posix.pollfd = undefined;
     // #endregion data
     for (0..max_sockets) |i| {
         sockfds[i].fd = context.INVALID_SOCKET;
@@ -78,7 +75,7 @@ pub fn main() !void {
     // 无限循环，等待客户端连接或者已连接的客户端发送数据
     while (true) {
         // 调用 poll，nums 是返回的事件数量
-        var nums = context.poll(&sockfds, max_sockets, -1);
+        var nums = if (builtin.os.tag == .windows) windows.poll(&sockfds, max_sockets, -1) else try std.posix.poll(&sockfds, -1);
         if (nums == 0) {
             continue;
         }
@@ -93,8 +90,7 @@ pub fn main() !void {
         // #region exist-connections
         // 遍历所有的连接，处理事件
         for (1..max_sockets) |i| {
-            // 这里的 nums 是 poll 返回的事件数量
-            // 在windows下，WSApoll允许返回0，未超时且没有套接字处于指定的状态
+            // 在windows下，WSApoll允许返回0，超时前没有套接字变成所要查询的状态
             if (nums == 0) {
                 break;
             }
@@ -133,14 +129,17 @@ pub fn main() !void {
                         // 但仅仅这样写一次并不安全
                         // 最优解应该是使用for循环检测写入的数据大小是否等于buf长度
                         // 如果不等于就继续写入
-                        // 这是因为 TCP 是一个面向流的协议，它并不保证一次 write 调用能够发送所有的数据
+                        // 这是因为 TCP 是一个面向流的协议
+                        // 它并不保证一次 write 调用能够发送所有的数据
                         // 作为示例，我们不检查是否全部写入
                         _ = try connection.stream.write(buf[0..len]);
                     }
                 }
             }
             // 检查是否是 POLLNVAL | POLLERR | POLLHUP 事件，即是否有错误发生，或者连接断开
-            else if (sockfd.revents & (context.POLLNVAL | context.POLLERR | context.POLLHUP) != 0) {
+            else if ((sockfd.revents &
+                (context.POLLNVAL | context.POLLERR | context.POLLHUP)) != 0)
+            {
                 // 将 pollfd 和 connection 置为无效
                 sockfds[i].fd = context.INVALID_SOCKET;
                 connections[i] = null;

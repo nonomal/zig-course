@@ -10,7 +10,7 @@ outline: deep
 
 ## 观察已有类型
 
-zig 提供了不少函数来获取已有类型的信息,如：`@TypeOf`、`@typeName`、`@typeInfo`、`@hasDecl`、`@hasField`、`@field`、`@fieldParentPtr`、`@call`。
+zig 提供了不少函数来获取已有类型的信息，如：`@TypeOf`、`@typeName`、`@typeInfo`、`@hasDecl`、`@hasField`、`@field`、`@fieldParentPtr`、`@call`。
 
 ### `@TypeOf`
 
@@ -30,22 +30,7 @@ _ = @TypeOf(2, 5.2);
 
 无副作用是指：
 
-```zig
-const std = @import("std");
-const expect = std.testing.expect;
-
-test "no runtime side effects" {
-    var data: i32 = 0;
-    const T = @TypeOf(foo(i32, &data));
-    try comptime expect(T == i32);
-    try expect(data == 0);
-}
-
-fn foo(comptime T: type, ptr: *T) T {
-    ptr.* += 1;
-    return ptr.*;
-}
-```
+<<<@/code/release/reflection.zig#no_effects
 
 以上这段测试完全可以运行通过，原因在于，`@TypeOf` 仅仅执行了类型计算，并没有真正地执行函数体的内容，故函数 `foo` 的效果并不会真正生效！
 
@@ -55,18 +40,7 @@ fn foo(comptime T: type, ptr: *T) T {
 
 该函数返回的类型名字完全是一个字符串字面量，并且包含其父容器的名字（通过 `.` 分隔）：
 
-```zig
-const std = @import("std");
-
-const T = struct {
-    const Y = struct {};
-};
-
-pub fn main() !void {
-    std.debug.print("{s}\n", .{@typeName(T)});
-    std.debug.print("{s}\n", .{@typeName(T.Y)});
-}
-```
+<<<@/code/release/reflection.zig#typeName
 
 ```sh
 $ zig build run
@@ -78,49 +52,35 @@ main.T.Y
 
 [`@typeInfo`](https://ziglang.org/documentation/master/#typeInfo)，该内建函数用于获取类型的信息。
 
-提供类型反射的具体功能，结构体、联合类型、枚举和错误集的类型信息具有保证与源文件中出现的顺序相同的字段，结构、联合、枚举和不透明的类型信息都有声明，也保证与源文件中出现的顺序相同。
+该函数返回一个 [`std.builtin.Type`](https://ziglang.org/documentation/master/std/#std.builtin.Type)，它包含了此类型的所有信息。
 
-实际上，该函数的效果是返回一个 [`std.builtin.Type`](https://ziglang.org/documentation/master/std/#A;std:builtin.Type)，该类型包含了所有 zig 当前可用的类型信息，并允许我们通过该类型观察并获取指定类型的具体信息。
+它是一个联合类型，有 `Struct`, `Union`, `Enum`, `ErrorSet` 等变体来储存结构体、联合、枚举、错误集等类型的类型信息。要判断类型的种类，可以使用 `switch` 或直接访问相应变体来断言之。
 
-以下是一个简单的示例：
+对结构、联合、枚举和错误集合，它保证信息中字段的顺序与源码中出现的顺序相同。
 
-```zig
-const std = @import("std");
+对结构、联合、枚举和透明类型，它保证信息中声明的顺序与源码中出现的顺序相同。
 
-const T = struct {
-    a: u8,
-    b: u8,
-};
+如以下示例中，首先使用`@typeInfo` 来获取类型 `T` 的信息，然后将其断言为一个 `Struct` 类型，最后用 `inline for` 输出其字段值。
 
-pub fn main() !void {
-    // 通过 @typeInfo 获取类型信息
-    const type_info = @typeInfo(T);
-    // 断言它为 struct
-    const struct_info = type_info.Struct;
+<<<@/code/release/reflection.zig#typeInfo
 
-    // inline for 打印该结构体内部字段的信息
-    inline for (struct_info.fields) |field| {
-        std.debug.print("field name is {s}, field type is {}\n", .{
-            field.name,
-            field.type,
-        });
-    }
-}
-```
-
-以上的示例中，我们使用了`@typeInfo` 来获取类型 `T` 的信息，随后将其断言为一个 `Struct` 类型，然后再通过 `inline for` 打印输出其字段值。
-
-需要注意的是，我们在此处打印必须要要使用 `inline for`，否则将会编译无法通过，这是因为 结构体的 **“字段类型”** [`std.builtin.Type.StructField`](https://ziglang.org/documentation/master/std/#A;std:builtin.Type.StructField)，其中有一个字段是 `comptime_int`，使得无法在运行时计算索引来便利，只能通过 `inline for` 将其转换为编译期计算。
+需要注意的是，我们必须使用 `inline for` 才能编译通过，这是因为结构体的 **“字段类型”** [`std.builtin.Type.StructField`](https://ziglang.org/documentation/master/std/#std.builtin.Type.StructField)中的一个字段是 `comptime_int`类型，使得 StructField 没有运行时大小，从而不能在运行时遍历其数组，必须用 `inline for` 在编译期计算。
 
 ::: warning
 
-值得注意的是，我们观察并获得的类型信息是 **只读的**，无法以此来修改已有类型，这是由于 zig 是一门静态语言并不具有过多的运行时功能！
-
-但我们可以以此为基础在编译期构建新的类型！
+获得的类型信息不能用于修改已有类型，但我们可以用这些信息在编译期构建新的类型！
 
 :::
 
-TODO：增加新的示例，仅仅一个示例不足以说明 `@typeInfo` 的使用！
+在以下示例中，使用 `@typeInfo` 获得一个整数类型的长度，并返回和它的长度相同的`u8`数组类型。当位数不为 8 的整倍数时，产生一个编译错误。
+
+<<<@/code/release/reflection.zig#TypeInfo2
+
+在以下示例中，使用 `@typeInfo` 获得一个结构体的信息，并使用 `@Type` 构造一个新的类型。构造的新结构体类型和原结构体的字段名和顺序相同，但结构体的内存布局被改为 extern，且每个字段的对齐被改为 1。
+
+<<<@/code/release/reflection.zig#TypeInfo3
+
+在以上示例中，我们将原类型的类型信息稍作修改，构造了一个新的类型。可以看到，虽然我们修改了得到的 `MyStruct` 的类型信息，但 `MyStruct` 本身并没有变化。
 
 ### `@hasDecl`
 
@@ -128,30 +88,7 @@ TODO：增加新的示例，仅仅一个示例不足以说明 `@typeInfo` 的使
 
 完全是编译期计算的，故值也是编译期已知的。
 
-```zig
-const std = @import("std");
-
-const Foo = struct {
-    nope: i32,
-
-    pub var blah = "xxx";
-    const hi = 1;
-};
-
-
-pub fn main() !void {
-    // true
-    std.debug.print("blah:{}\n", .{@hasDecl(Foo, "blah")});
-    // true
-    // hi 此声明可以被检测到是因为类型和代码处于同一个文件中，这导致他们之间可以互相访问
-    // 换另一个文件就不行了
-    std.debug.print("hi:{}\n", .{@hasDecl(Foo, "hi")});
-    // false 不检查字段
-    std.debug.print("nope:{}\n", .{@hasDecl(Foo, "nope")});
-    // false 没有对应的声明
-    std.debug.print("nope1234:{}\n", .{@hasDecl(Foo, "nope1234")});
-}
-```
+<<<@/code/release/reflection.zig#hasDecl
 
 ### `@hasField`
 
@@ -159,54 +96,13 @@ pub fn main() !void {
 
 完全是编译期计算的，故值也是编译期已知的。
 
-```zig
-const std = @import("std");
-
-const Foo = struct {
-    nope: i32,
-
-    pub var blah = "xxx";
-    const hi = 1;
-};
-
-pub fn main() !void {
-    // false
-    std.debug.print("blah:{}\n", .{@hasField(Foo, "blah")});
-    // false
-    std.debug.print("hi:{}\n", .{@hasField(Foo, "hi")});
-    // true
-    std.debug.print("nope:{}\n", .{@hasField(Foo, "nope")});
-    // false
-    std.debug.print("nope1234:{}\n", .{@hasField(Foo, "nope1234")});
-}
-```
+<<<@/code/release/reflection.zig#hasField
 
 ### `@field`
 
 [`@field`](https://ziglang.org/documentation/master/#field) 用于获取变量（容器类型）的字段或者容器类型的声明。
 
-```zig
-const std = @import("std");
-
-const Point = struct {
-    x: u32,
-    y: u32,
-
-    pub var z: u32 = 1;
-};
-
-pub fn main() !void {
-    var p = Point{ .x = 0, .y = 0 };
-
-    @field(p, "x") = 4;
-    @field(p, "y") = @field(p, "x") + 1;
-    // x is 4, y is 5
-    std.debug.print("x is {}, y is {}\n", .{ p.x, p.y });
-
-    // Point's z is 1
-    std.debug.print("Point's z is {}\n", .{@field(Point, "z")});
-}
-```
+<<<@/code/release/reflection.zig#Field
 
 ::: info 🅿️ 提示
 
@@ -218,22 +114,7 @@ pub fn main() !void {
 
 [`@fieldParentPtr`](https://ziglang.org/documentation/master/#fieldParentPtr) 根据给定的指向结构体字段的指针和名字，可以获取结构体的基指针。
 
-```zig
-const std = @import("std");
-
-const Point = struct {
-    x: u32,
-};
-
-pub fn main() !void {
-    var p = Point{ .x = 0, .y = 0 };
-
-    const res = &p == @fieldParentPtr(Point, "x", &p.x);
-
-    // test is true
-    std.debug.print("test is {}\n", .{res});
-}
-```
+<<<@/code/release/reflection.zig#fieldParentPtr
 
 ### `@call`
 
@@ -241,17 +122,7 @@ pub fn main() !void {
 
 它接收一个调用修饰符、一个函数、一个元组作为参数。
 
-```zig
-const std = @import("std");
-
-fn add(a: i32, b: i32) i32 {
-    return a + b;
-}
-
-pub fn main() !void {
-    std.debug.print("call function add, the result is {}\n", .{@call(.auto, add, .{ 1, 2 })});
-}
-```
+<<<@/code/release/reflection.zig#call
 
 ## 构建新的类型
 
@@ -267,38 +138,11 @@ zig 除了获取类型信息外，还提供了在编译期构建全新类型的�
 
 `@Type(comptime info: std.builtin.Type) type`
 
-参数的具体类型可以参考 [此处](https://ziglang.org/documentation/master/std/#A;std:builtin.Type)。
+参数的具体类型可以参考 [此处](https://ziglang.org/documentation/master/std/#std.builtin.Type)。
 
 以下示例为我们构建一个新的结构体：
 
-```zig
-const std = @import("std");
-
-const T = @Type(.{
-    .Struct = .{
-        .layout = .Auto,
-        .fields = &.{
-            .{
-                .alignment = 8,
-                .name = "b",
-                .type = u32,
-                .is_comptime = false,
-                .default_value = null,
-            },
-        },
-        .decls = &.{},
-        .is_tuple = false,
-    },
-});
-
-pub fn main() !void {
-    const D = T{
-        .b = 666,
-    };
-
-    std.debug.print("{}\n", .{D.b});
-}
-```
+<<<@/code/release/reflection.zig#Type
 
 ::: info 🅿️ 提示
 

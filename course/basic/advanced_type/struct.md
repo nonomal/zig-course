@@ -22,45 +22,9 @@ outline: deep
 
 ::: code-group
 
-```zig [default]
-const Circle = struct {
-    radius: u8,
+<<<@/code/release/struct.zig#default_struct [default]
 
-    const PI: f16 = 3.14;
-
-    pub fn init(radius: u8) Circle {
-        return Circle{ .radius = radius };
-    }
-
-    fn area(self: *Circle) f16 {
-        return @as(f16, @floatFromInt(self.radius * self.radius)) * PI;
-    }
-};
-```
-
-```zig [more]
-const std = @import("std");
-
-const Circle = struct {
-    radius: u8,
-
-    const PI: f16 = 3.14;
-
-    pub fn init(radius: u8) Circle {
-        return Circle{ .radius = radius };
-    }
-
-    fn area(self: *Circle) f16 {
-        return @as(f16, @floatFromInt(self.radius * self.radius)) * PI;
-    }
-};
-
-pub fn main() void {
-    var radius: u8 = 5;
-    var circle = Circle.init(radius);
-    std.debug.print("The area of a circle with radius {} is {d:.2}\n", .{ radius, circle.area() });
-}
-```
+<<<@/code/release/struct.zig#more_struct [more]
 
 :::
 
@@ -79,23 +43,15 @@ pub fn main() void {
 
 ## 自引用
 
-通常自引用方式为函数参数第一个为结构体指针类型，例如：
+常见的自引用方式是函数第一个参数为结构体指针类型，例如：
 
-```zig
-const std = @import("std");
+::: code-group
 
-const TT = struct { // [!code focus]
-    pub fn print(self: *TT) void { // [!code focus]
-        _ = self; // [!code focus]
-        std.debug.print("Hello, world!\n", .{}); // [!code focus]
-    } // [!code focus]
-}; // [!code focus]
+<<<@/code/release/struct.zig#deault_self_reference1 [default]
 
-pub fn main() !void {
-    var tmp: TT = .{};
-    tmp.print();
-}
-```
+<<<@/code/release/struct.zig#more_self_reference1 [more]
+
+:::
 
 平常使用过程中会面临另外的一个情况，就是匿名结构体要如何实现自引用呢？
 
@@ -105,34 +61,13 @@ pub fn main() !void {
 
 例如：
 
-```zig
-const std = @import("std");
+::: code-group
 
-fn List(comptime T: type) type { // [!code focus]
-    return struct { // [!code focus]
-        const Self = @This(); // [!code focus]
+<<<@/code/release/struct.zig#deault_self_reference2 [default]
 
-        items: []T, // [!code focus]
+<<<@/code/release/struct.zig#more_self_reference2 [more]
 
-        fn length(self: Self) usize { // [!code focus]
-            return self.items.len; // [!code focus]
-        } // [!code focus]
-    }; // [!code focus]
-} // [!code focus]
-
-pub fn main() !void {
-    const int_list = List(u8);
-    var arr: [5]u8 = .{
-        1, 2, 3, 4, 5,
-    };
-
-    var list: int_list = .{
-        .items = &arr,
-    };
-
-    std.debug.print("list len is {}\n", .{list.length()});
-}
-```
+:::
 
 :::details 更复杂的例子
 
@@ -140,114 +75,9 @@ pub fn main() !void {
 
 ::: code-group
 
-```zig [default]
-const User = struct {
-    userName: []u8,
-    password: []u8,
-    email: []u8,
-    active: bool,
+<<<@/code/release/struct.zig#deault_self_reference3 [default]
 
-    pub const writer = "zig-course";
-
-    pub fn init(userName: []u8, password: []u8, email: []u8, active: bool) User {
-        return User{
-            .userName = userName,
-            .password = password,
-            .email = email,
-            .active = active,
-        };
-    }
-
-    pub fn print(self: *User) void {
-        std.debug.print(
-            \\username: {s}
-            \\password: {s}
-            \\email: {s}
-            \\active: {}
-            \\
-        , .{
-            self.userName,
-            self.password,
-            self.email,
-            self.active,
-        });
-    }
-};
-```
-
-```zig [more]
-const std = @import("std");
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
-const User = struct {
-    userName: []u8,
-    password: []u8,
-    email: []u8,
-    active: bool,
-
-    pub const writer = "zig-course";
-
-    pub fn init(userName: []u8, password: []u8, email: []u8, active: bool) User {
-        return User{
-            .userName = userName,
-            .password = password,
-            .email = email,
-            .active = active,
-        };
-    }
-
-    pub fn print(self: *User) void {
-        std.debug.print(
-            \\username: {s}
-            \\password: {s}
-            \\email: {s}
-            \\active: {}
-            \\
-        , .{
-            self.userName,
-            self.password,
-            self.email,
-            self.active,
-        });
-    }
-};
-
-const name = "xiaoming";
-const passwd = "123456";
-const mail = "123456@qq.com";
-
-pub fn main() !void {
-    // var username = [_]8{};
-    const allocator = gpa.allocator();
-    defer {
-        const deinit_status = gpa.deinit();
-        //fail test; can't try in defer as defer is executed after we return
-        if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
-    }
-
-    const username = try allocator.alloc(u8, 20);
-    defer allocator.free(username);
-
-    @memset(username, 0);
-    @memcpy(username[0..name.len], name);
-
-    const password = try allocator.alloc(u8, 20);
-    defer allocator.free(password);
-
-    @memset(password, 0);
-    @memcpy(password[0..passwd.len], passwd);
-
-    const email = try allocator.alloc(u8, 20);
-    defer allocator.free(email);
-
-    @memset(email, 0);
-    @memcpy(email[0..mail.len], mail);
-
-    var user = User.init(username, password, email, true);
-    user.print();
-}
-```
+<<<@/code/release/struct.zig#more_self_reference3 [more]
 
 在以上的代码中，我们使用了内存分配的功能，并且使用了切片和多行字符串，以及 `defer` 语法（在当前作用域的末尾执行语句）。
 
@@ -257,14 +87,7 @@ pub fn main() !void {
 
 zig 在使用结构体的时候还支持省略结构体类型，只要能让 zig 编译器推断出类型即可，例如：
 
-```zig
-const Point = struct { x: i32, y: i32 };
-
-var pt: Point = .{
-    .x = 13,
-    .y = 67,
-};
-```
+<<<@/code/release/struct.zig#auto_reference
 
 ## 泛型实现
 
@@ -274,25 +97,11 @@ var pt: Point = .{
 
 以下是一个链表的类型实现：
 
-```zig
-fn LinkedList(comptime T: type) type {
-    return struct {
-        pub const Node = struct {
-            prev: ?*Node,
-            next: ?*Node,
-            data: T,
-        };
-
-        first: ?*Node,
-        last:  ?*Node,
-        len:   usize,
-    };
-}
-```
+<<<@/code/release/struct.zig#linked_list
 
 :::info 🅿️ 提示
 
-当然这种操作不局限于声明变量，你在函数中也可以使用（当编译器无法完成推断时，它会给出一个完整的堆栈跟踪）！
+当然这种操作不局限于声明变量，你在函数中也可以使用（当编译器无法完成推断时，它会给出一个包含完整堆栈跟踪的报错）！
 
 :::
 
@@ -300,16 +109,7 @@ fn LinkedList(comptime T: type) type {
 
 结构体允许使用默认值，只需要在定义结构体的时候声明默认值即可：
 
-```zig
-const Foo = struct {
-    a: i32 = 1234,
-    b: i32,
-};
-
-const x = Foo{
-    .b = 5,
-};
-```
+<<<@/code/release/struct.zig#default_field
 
 ## 空结构体
 
@@ -317,80 +117,42 @@ const x = Foo{
 
 ::: code-group
 
-```zig [default]
-const Empty = struct {
-    // const PI = 3.14;
-};
-```
+<<<@/code/release/struct.zig#default_empty_struct [default]
 
-```zig [more]
-const std = @import("std");
-
-const Empty = struct {
-    // const PI = 3.14;
-};
-
-pub fn main() void {
-    std.debug.print("{}\n", .{@sizeOf(Empty)});
-}
-```
+<<<@/code/release/struct.zig#more_empty_struct [more]
 
 :::
 
 :::info 🅿️ 提示
 
-使用 Go 的朋友对这个可能很熟悉，在 Go 中经常用空结构体做实体在 chan 中传递，它的内存大小为 0 ！
+使用 Go 的朋友对这个可能很熟悉，在 Go 中经常用空结构体做实体在 chan 中传递，它的内存大小为 0！  
+而在 C++ 中，这样的空结构体的内存大小则是 1。
 
 :::
 
-## 通过字段获取基指针
+## 通过字段获取基指针（基于字段的指针）
 
 为了获得最佳的性能，结构体字段的顺序是由编译器决定的，但是，我们可以仍然可以通过结构体字段的指针来获取到基指针！
 
-```zig
-const Point = struct {
-    x: f32,
-    y: f32,
-};
+<<<@/code/release/struct.zig#base_ptr
 
-fn setYBasedOnX(x: *f32, y: f32) void {
-    const point = @fieldParentPtr(Point, "x", x);
-    point.y = y;
-}
-```
-
-这里使用了内建函数 [`@fieldParentPtr`](https://ziglang.org/documentation/0.11.0/#toc-fieldParentPtr) ，它会根据给定字段指针，返回对应的结构体基指针。
+这里使用了内建函数 [`@fieldParentPtr`](https://ziglang.org/documentation/master/#toc-fieldParentPtr) ，它会根据给定字段指针，返回对应的结构体基指针。
 
 ## 元组
 
 元组实际上就是不指定字段的（匿名）结构体。
 
-由于没有字段名，zig 会为每个值分配一个整数的字段名，但是它无法通过正常的 `.` 语法来访问，但可以增加一个修饰符 `@""`，通过它使用 `.` 语法访问元组中的元素。
+由于没有指定字段名，zig 会使用从 0 开始的整数依次为字段命名。但整数并不是有效的标识符，所以使用 `.` 语法访问字段的时候需要将数字写在 `@""` 中。
 
-```zig
-// 我们定义了一个元组类型
-const Tuple = struct{ u8, u8 };
+<<<@/code/release/struct.zig#tuple
 
-// 直接使用字面量来定义一个元组
-const values = .{
-    @as(u32, 1234),
-    @as(f64, 12.34),
-    true,
-    "hi",
-};
-
-const hi = values.@"3"; // "hi"
-```
-
-当然，以上的语法很啰嗦,所以 zig 提供了类似数组的语法来访问元组，例如 `values[3]` 的值就是 "hi"。
+当然，以上的语法很啰嗦，所以 zig 提供了类似**数组的语法**来访问元组，例如 `values[3]` 的值就是 "hi"。
 
 :::info 🅿️ 提示
 
-元组还有一个和数组一样的字段 `len`，并且支持 `++` 和 `**` 运算符，以及[内联 for](#)。
+元组还有一个和数组一样的字段 `len`，并且支持 `++` 和 `**` 运算符，以及[内联 for](../process_control/loop.md#内联-inline)。
 
 :::
-
-<!-- TODO：增加内联for的地址 -->
 
 ## 高级特性
 
@@ -410,7 +172,7 @@ const hi = values.@"3"; // "hi"
 
 - 字段严格按照声明的顺序排列
 - 在不同字段之间不会存在位填充（不会发生内存对齐）
-- zig 支持任意位宽的整数（通常不足8位的仍然使用8位），但在 `packed` 下，会只使用它们的位宽
+- zig 支持任意位宽的整数（通常不足 8 位的仍然使用 8 位），但在 `packed` 下，会只使用它们的位宽
 - `bool` 类型的字段，仅有一位
 - 枚举类型只使用其整数标志位的位宽
 - 联合类型只使用其最大位宽
@@ -418,103 +180,54 @@ const hi = values.@"3"; // "hi"
 
 以上几个特性就有很多有意思的点值得我们使用和注意。
 
-1. zig 允许我们获取字段指针，但这些指针并不是普通指针（涉及到了位偏移），无法作为普通的函数参数使用，这个情况可以使用 [`@bitOffsetOf`](https://ziglang.org/documentation/0.11.0/#bitOffsetOf) 和 [`@offsetOf`](https://ziglang.org/documentation/0.11.0/#offsetOf) 观察到：
+1. zig 允许我们获取字段指针。如果字段涉及位偏移，那么该字段的指针就无法赋值给普通指针（因为位偏移也是指针对齐信息的一部分）。这个情况可以使用 [`@bitOffsetOf`](https://ziglang.org/documentation/master/#bitOffsetOf) 和 [`@offsetOf`](https://ziglang.org/documentation/master/#offsetOf) 观察到：
 
 :::details 示例
 
-```zig
-const std = @import("std");
-const expect = std.testing.expect;
-
-const BitField = packed struct {
-    a: u3,
-    b: u3,
-    c: u2,
-};
-
-test "pointer to non-bit-aligned field" {
-    comptime {
-        try expect(@bitOffsetOf(BitField, "a") == 0);
-        try expect(@bitOffsetOf(BitField, "b") == 3);
-        try expect(@bitOffsetOf(BitField, "c") == 6);
-
-        try expect(@offsetOf(BitField, "a") == 0);
-        try expect(@offsetOf(BitField, "b") == 0);
-        try expect(@offsetOf(BitField, "c") == 0);
-    }
-}
-```
+<<<@/code/release/struct.zig#packed_bit_offset
 
 :::
 
-2. 使用位转换 [`@bitCast`](https://ziglang.org/documentation/0.11.0/#bitCast) 和指针转换 [`@ptrCast`](https://ziglang.org/documentation/0.11.0/#ptrCast) 来强制对 `packed` 结构体进行转换操作：
+2. 使用位转换 [`@bitCast`](https://ziglang.org/documentation/master/#bitCast) 和指针转换 [`@ptrCast`](https://ziglang.org/documentation/master/#ptrCast) 来强制对 `packed` 结构体进行转换操作：
 
 :::details 示例
 
-```zig
-const std = @import("std");
-// 这里获取目标架构是字节排序方式，大端和小端
-const native_endian = @import("builtin").target.cpu.arch.endian();
-const expect = std.testing.expect;
-
-const Full = packed struct {
-    number: u16,
-};
-const Divided = packed struct {
-    half1: u8,
-    quarter3: u4,
-    quarter4: u4,
-};
-
-test "@bitCast between packed structs" {
-    try doTheTest();
-    try comptime doTheTest();
-}
-
-fn doTheTest() !void {
-    try expect(@sizeOf(Full) == 2);
-    try expect(@sizeOf(Divided) == 2);
-    var full = Full{ .number = 0x1234 };
-    var divided: Divided = @bitCast(full);
-    try expect(divided.half1 == 0x34);
-    try expect(divided.quarter3 == 0x2);
-    try expect(divided.quarter4 == 0x1);
-
-    var ordered: [2]u8 = @bitCast(full);
-    switch (native_endian) {
-        .Big => {
-            try expect(ordered[0] == 0x12);
-            try expect(ordered[1] == 0x34);
-        },
-        .Little => {
-            try expect(ordered[0] == 0x34);
-            try expect(ordered[1] == 0x12);
-        },
-    }
-}
-```
+<<<@/code/release/struct.zig#packed_cast
 
 :::
 
 3. 还可以对 `packed` 的结构体的指针设置内存对齐来访问对应的字段：
 
-> 这里说明可能有些不清楚，请见谅！
+:::details 示例
 
-```zig
-const std = @import("std");
-const expect = std.testing.expect;
+<<<@/code/release/struct.zig#aligned_struct
 
-const S = packed struct {
-    a: u32,
-    b: u32,
-};
-test "overaligned pointer to packed struct" {
-    var foo: S align(4) = .{ .a = 1, .b = 2 };
-    const ptr: *align(4) S = &foo;
-    const ptr_to_b: *u32 = &ptr.b;
-    try expect(ptr_to_b.* == 2);
-}
+:::
+
+4. `packed struct` 会保证字段的顺序以及在字段间不存在额外的填充，但针对结构体本身可能仍然存在额外的填充：
+
+:::details 示例
+
+<<<@/code/release/struct.zig#reorder_struct
+
+输出为：
+
+```sh
+16
+12
+0
+4
 ```
+
+在 64 位系统上，Foo 的内存布局是：
+
+```sh
+|   4(i32)  |  8(pointer)    |   4(padding)  |
+```
+
+额外的讨论信息：[github issue #20265](https://github.com/ziglang/zig/issues/20265)
+
+:::
 
 ### 命名规则
 
@@ -529,22 +242,7 @@ test "overaligned pointer to packed struct" {
 
 ::: code-group
 
-```zig [default]
-const std = @import("std");
-
-pub fn main() void {
-    const Foo = struct {};
-    std.debug.print("variable: {s}\n", .{@typeName(Foo)});
-    std.debug.print("anonymous: {s}\n", .{@typeName(struct {})});
-    std.debug.print("function: {s}\n", .{@typeName(List(i32))});
-}
-
-fn List(comptime T: type) type {
-    return struct {
-        x: T,
-    };
-}
-```
+<<<@/code/release/struct.zig#name_principle
 
 ```sh [output]
 variable: struct_name.main.Foo

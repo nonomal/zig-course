@@ -4,13 +4,16 @@ outline: deep
 
 # 与 C 交互
 
-zig 作为一个可以独立于 C 的语言，不依赖 libc，但 zig 仍然具有非常强大的与 c 直接交互的能力，并远超其他语言。
+zig 作为一个可以独立于 C 的语言，不依赖 libc，但 zig 仍然具有非常强大的与 C 直接交互的能力，并远超其他语言。
+
+> [!TIP] 什么是 libc
+> libc 是 C 语言的标准库，它提供了许多基本的程序功能，如输入 / 输出处理、字符串操作、内存管理等。在 Unix 和 Linux 系统中，libc 通常是操作系统的核心部分，它提供了系统调用的接口，使得应用程序可以使用操作系统的服务。在 Windows 系统中，类似的库是 msvcrt 库。
 
 ::: info 🅿️ 提示
 
 zig 所指的交互并不仅仅是使用 C 的库，zig 还可以作为 C 的编译器，导出 C ABI 兼容的库供其他程序使用。
 
-并且 zig 使用 C 并不是通过 [FFI](https://en.wikipedia.org/wiki/Foreign_function_interface)/bindings 实现，而是近乎原生的调用，这归功于 zig 实现了一套 C 的编译器并且支持将 C 代码翻译为 zig 代码！
+并且 zig 使用 C 并不是通过 [FFI](https://en.wikipedia.org/wiki/Foreign_function_interface) / bindings 实现，而是近乎原生的调用，这归功于 zig 实现了一套 C 的 [编译器](https://github.com/ziglang/zig/tree/master/lib/compiler/aro) 并且支持将 C 代码翻译为 zig 代码！
 
 :::
 
@@ -37,15 +40,7 @@ C 语言共享类型通常是通过引入头文件实现，这点在 zig 中可�
 
 接下来展示一个例子，简单地引入 c 标准库的 `printf` 函数：
 
-```zig
-const c = @cImport({
-    @cDefine("_NO_CRT_STDIO_INLINE", "1");
-    @cInclude("stdio.h");
-});
-pub fn main() void {
-    _ = c.printf("hello\n");
-}
-```
+<<<@/code/release/interact_with_c.zig#cHeaderImport
 
 ::: info 🅿️ 提示
 
@@ -65,15 +60,38 @@ pub fn main() void {
 
 :::
 
+## vcpkg C Lib 导入
+
+> [!IMPORTANT]
+> 该部分示例代码暂无 CI 测试，可能存在过期情况，请注意！
+
+既然可以引入头文件，那么毫无疑问同样可以引入由第三方写好的二进制 lib 库。
+
+以微软开发的跨平台开源 c/c++ 包管理器 _vcpkg_ 的库导入为例，具体安装以及设置环境变量的教程不在这里赘叙，只讲怎么 zig 使用已经编译好的 lib。
+
+假如你所处的开发环境系统为 "Windows"、处理器架构为 "x64"、vcpkg 安装目录为 "D:\vcpkg"、并且操作模式为 classic（Classic Mode）、要使用并且已安装的库为 c 运算库 `gsl`。
+
+那么在 `build.zig` 文件中，
+
+<<<@/code/release/import_vcpkg/build.zig#c_import
+
+假设你想要借用 `gsl` 库来对数值进行傅里叶变换，那么可以先导入
+
+<<<@/code/release/import_vcpkg/src/main.zig#import_gsl
+
+然后使用 `gsl_fft_complex_radix2_forward` 函数计算从 1 到 n 的复数数组的离散傅里叶变换
+
+<<<@/code/release/import_vcpkg/src/main.zig#use_gsl_fft
+
+::: info 🅿️ 提示
+
+zig 使用 c++ 库的方式同 c 一样，需要保证该库 `extern "C"`，并且在需要使用动态库的时候也同样不能少。
+
+:::
+
 ## `C Translation CLI`
 
 zig 提供了一个命令行工具 `zig translate-c` 供我们使用，它可以将 C 的代码翻译为 zig 的代码，并将其输出到标准输出。
-
-::: warning
-
-注意：当前 zig 的 `translate-c` 功能并不完善，可能存在某些 bug，使用时请注意查询 issue！
-
-:::
 
 ### 命令行参数
 
@@ -84,7 +102,7 @@ zig 提供了一个命令行工具 `zig translate-c` 供我们使用，它可以
 
 ::: info 🅿️ 提示
 
-完整的构架目标三元组可以在这里 _[查看](https://ziglang.org/documentation/master/#Targets)_。
+完整的构架目标三元组可以通过 `zig targets` 命令查看。
 
 在使用翻译功能时，需要保证 target 和传递的 cflags 是正确的，否则可能会出现解析失败或者与 C 代码链接时出现微妙的 ABI 不兼容问题。
 
@@ -92,7 +110,7 @@ zig 提供了一个命令行工具 `zig translate-c` 供我们使用，它可以
 
 ### `@cImport` vs `translate-c`
 
-事实上，这两个东西的底层实现是一样的，`@cImport` 一般用于使用 C 库时引入头文件，而 `translate-c` 通常是为了修改翻译后的代码，例如：将 `anytype` 修改为更加精确的类型、将 `[*c]T` 指针修改为 `[*]T` 或者 `*T` 来提高类型安全性、启动或者禁用某些运行时的安全性功能。
+事实上，这两者底层实现是一样的，`@cImport` 一般用于使用 C 库时引入头文件，而 `translate-c` 通常是为了修改翻译后的代码，例如：将 `anytype` 修改为更加精确的类型、将 `[*c]T` 指针修改为 `[*]T` 或者 `*T` 来提高类型安全性、启动或者禁用某些运行时的安全性功能。
 
 ## C 翻译缓存
 
@@ -100,16 +118,7 @@ C 翻译功能（无论是通过 `zig translate-c` 还是 `@cImport` 使用）�
 
 要在编译使用 `@cImport` 引入的代码时打印缓存文件的存储位置，请使用 `--verbose-cimport` 参数：
 
-```zig
-// 示例文件
-const c = @cImport({
-    @cDefine("_NO_CRT_STDIO_INLINE", "1");
-    @cInclude("stdio.h");
-});
-pub fn main() void {
-    _ = c;
-}
-```
+<<<@/code/release/interact_with_c.zig#cTranslate
 
 ```sh
 $ zig build-exe test.zig -lc --verbose-cimport
@@ -147,6 +156,8 @@ int foo(void) {
 }
 ```
 
+经过翻译后变为如下代码，函数 `foo` 是正常可以工作的，仅仅是宏 `MAKELOCAL` 无法正常使用！
+
 ```zig
 pub export fn foo() c_int {
     var a: c_int = 1;
@@ -155,22 +166,21 @@ pub export fn foo() c_int {
     _ = &b;
     return a + b;
 }
-pub const MAKELOCAL = @compileError("unable to translate C expr: unexpected token .Equal");
+pub const MAKELOCAL =
+    @compileError("unable to translate C expr: unexpected token .Equal");
 ```
-
-例如，以上代码翻译完成后，函数 `foo` 是正常可以工作的，仅仅是宏 `MAKELOCAL` 无法正常使用！
 
 :::
 
 ## C 指针
 
-应当避免使用此类型，通常它仅出现在翻译输出代码中。
+应尽量避免使用此类型，通常它仅出现在翻译输出代码中。
 
-导入 C 头文件后，zig 并不知道如何处理指针（因为 C 的指针可以同时作为单项指针和多项指针使用），这会导致歧义，故 zig 引入一种新类型 `[*]T`，作为一种折中方案，新类型 `[*]T` 具有以下特点：
+导入 C 头文件后，zig 并不知道如何处理指针（因为 C 的指针可以同时作为单项指针和多项指针使用），这会导致歧义，故 zig 引入一种新类型 `[*c]T`，作为一种折中方案，新类型 `[*c]T` 具有以下特点：
 
 1. 支持 zig 普通指针（`*T` 和 `[*]T`）的全部语法。
 2. 可以强制转换为其他的任意指针类型，当然也包括可选指针类型（当被转换为非可选指针时，如果地址为 0，此时会触发安全检查的保护机制，报错并通知出现了未定义行为）。
-3. 允许地址为 0，在非 `freestanding`（可以简单看作裸机器，通常编写内核会使用这个）目标上，不允许取消引用地址为 0 的指针（会触发未定义行为）。可选的 C 指针引入一个位来跟踪 `null`，但通常它没有这样做，可以直接使用普通的可选指针。
+3. 允许地址为 0，在非 `freestanding`（可以简单看作裸机器，通常编写内核会使用这个）目标上，不允许取消引用地址为 0 的指针（会触发未定义行为）。可选的 C 指针引入一个位来跟踪 `null`，但通常无需这样做，可以直接使用普通的可选指针。
 4. 支持与整数进行强制转换。
 5. 支持和整数进行比较。
 6. 不支持 zig 的指针特性，例如对齐（align）方式，如果要设置这些，请转换为普通指针后再进行操作！
@@ -191,41 +201,21 @@ ptr_to_struct_array[index].struct_member
 
 zig 支持外部（`extern`）可变参数函数：
 
-```zig
-// 这是对应 C printf 的声明
-pub extern "c" fn printf(format: [*:0]const u8, ...) c_int;
-```
+<<<@/code/release/interact_with_c.zig#external_func
 
 可变参数的访问可以使用 [`@cVaStart`](https://ziglang.org/documentation/master/#cVaStart)、[`@cVaEnd`](https://ziglang.org/documentation/master/#cVaEnd)、[`@cVaArg`](https://ziglang.org/documentation/master/#cVaArg) 和 [`@cVaCopy`](https://ziglang.org/documentation/master/#cVaCopy) 来实现：
 
-```zig
-const std = @import("std");
-
-// 使用 callconv 声明函数调用约定为 C
-fn add(count: c_int, ...) callconv(.C) c_int {
-    // 对应 C 的宏 va_start
-    var ap = @cVaStart();
-    // 对应 C 的宏 va_end
-    defer @cVaEnd(&ap);
-    var i: usize = 0;
-    var sum: c_int = 0;
-    while (i < count) : (i += 1) {
-        // 对应 C 的宏 va_arg
-        sum += @cVaArg(&ap, c_int);
-    }
-    return sum;
-}
-```
+<<<@/code/release/interact_with_c.zig#external
 
 ## 额外内容
 
-以下是经过实践和总结出来的额外信息，官方的 ziglang 并未提供！
+以下是经过实践和总结出来的额外信息，zig 官方的手册并未提供！
 
 ### 为什么 zig 可以做到比 c 更好的编译
 
 实际上，zig 本身实现了一个 C 的编译器（目前仅限 linux，其他平台仍使用 llvm），当然不仅仅如此，zig 还提供了一个比较 **_magic_** 的东西—— [`glibc-abi-tool`](https://github.com/ziglang/glibc-abi-tool)，这是一个收集每个版本的 glibc 的 `.abilist` 文件的存储库，还包含一个将它们组合成一个数据集的工具。
 
-所以，zig 本身所谓的 “**_ships with libc_**” 并不准确，它的确分发 libc，但它只携带每个版本的符号库，仅依赖这个符号库，zig 就可以实现在没有 libc 的情况下仍然正确地进行动态链接！
+所以，zig 本身所谓的“**_ships with libc_**”并不准确，它的确分发 libc，但它只携带每个版本的符号库，仅依赖这个符号库，zig 就可以实现在没有 libc 的情况下仍然正确地进行动态链接！
 
 ::: info 🅿️ 提示
 
@@ -243,20 +233,23 @@ fn add(count: c_int, ...) callconv(.C) c_int {
 
 能，又不能！
 
-zig 支持静态链接 musl（针对linux的另一个 libc，目标为嵌入式系统与移动设备），其他仅支持动态链接。受益于这种特性，我们可以将它作为 C 编译器的替代品使用，它可以提供更加完善的工具链。
+zig 支持静态链接 musl（针对 linux 的另一个 libc，目标为嵌入式系统与移动设备），其他仅支持动态链接。受益于这种特性，我们可以将它作为 C 编译器的替代品使用，它可以提供更加完善的工具链。
 
-举个比较*剑走偏锋*的例子，go 的 cgo 特性一直为人们所吐槽，一旦使用了它，基本就要和 go 宣称的非常方便的交叉编译说拜拜了，但我们可以使用 zig 来帮助我们实现 cgo 的交叉编译：
+举个比较 _剑走偏锋_ 的例子，go 的 cgo 特性一直为人们所吐槽，一旦使用了它，就要和 go 宣称的非常方便的交叉编译说拜拜了，但我们可以使用 zig 来帮助我们实现 cgo 的交叉编译：
 
 ```sh
 CC='zig cc -target x86_64-linux-gnu' CXX='zig cc -target x86_64-linux-gnu' go build
 ```
 
-设置 zig 作为 C 编译器来供 go 使用，只要对 zig 和 go 设置正确的target，就可以在本机实现完善的交叉编译。
+设置 zig 作为 C 编译器来供 go 使用，只要对 zig 和 go 设置正确的 target，就可以在本机实现完善的交叉编译。
 
 再进一步，我们还可以构建出 linux 的使用 cgo 的静态链接的二进制可执行文件：
 
 ```sh
-CC='zig cc -target x86_64-linux-musl' CXX='zig cc -target x86_64-linux-musl' CGO_CFLAGS='-D_LARGEFILE64_SOURCE' go build -ldflags='-linkmode=external -extldflags -static'
+CC='zig cc -target x86_64-linux-musl' \
+CXX='zig cc -target x86_64-linux-musl' \
+CGO_CFLAGS='-D_LARGEFILE64_SOURCE' \
+go build -ldflags='-linkmode=external -extldflags -static'
 ```
 
-上方的 `CGO_CFLAGS` 是为了防止编译失败，`ldfalgs` 是为了指定静态链接！
+`CGO_CFLAGS` 是为了防止编译失败，`ldflags` 是为了指定静态链接！

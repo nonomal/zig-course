@@ -22,7 +22,7 @@ outline: deep
 
 简单来说，使用 **驼峰命名法**、**TitleCase 命名法**、**蛇形命名法**
 
-- 类型声明使用 _TitleCase 命名法_（除非是一个 0 字段的 `struct`，此时它被视为一个命名空间，应使用 _蛇形命名法_ ）
+- 类型声明使用 _TitleCase 命名法_（除非是一个 0 字段的 `struct`，此时它被视为一个命名空间，应使用 _蛇形命名法_）
 - 如果 `x` 是可以被调用的，并且它返回一个类型，那么使用 _TitleCase 命名法_
 - 如果 `x` 是可被调用，并且返回非类型，应使用 _驼峰命名法_
 - 其他情况下，应该使用 _蛇形命名法_
@@ -68,7 +68,10 @@ fn functionName(param_name: TypeName) void {
 const functionAlias = functionName;
 
 // 可被调用，且返回类型，使用 TitleCase 命名法
-fn ListTemplateFunction(comptime ChildType: type, comptime fixed_size: usize) type {
+fn ListTemplateFunction(
+    comptime ChildType: type,
+    comptime fixed_size: usize,
+) type {
     return List(ChildType, fixed_size);
 }
 
@@ -101,4 +104,4 @@ fn readU32Be() u32 {}
 - 根据名称省略冗余信息，即当可以立即从命名推断出其用途时，无需注释其用途
 - 鼓励将注释信息复制到多个类似的函数上，这有助于 IDE 或者其他工具提供更好的帮助说明
 - 对不变量使用 **假设** 来表示当违反事先预定情况时会发生未定义行为
-- 使用 **断言** 表示当当违反预定情况时会触发安全检查的未定义行为
+- 使用 **断言** 表示当违反预定情况时会触发安全检查的未定义行为

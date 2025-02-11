@@ -14,11 +14,11 @@ export default [
     text: "环境配置",
     items: [
       {
-        text: "安装 Zig 环境",
+        text: "环境部署",
         link: "/environment/install-environment",
       },
       {
-        text: "编辑器选择",
+        text: "编辑器",
         link: "/environment/editor",
       },
       {
@@ -75,7 +75,11 @@ export default [
           },
           {
             text: "切片",
-            link: "/basic/advanced_type/silce",
+            link: "/basic/advanced_type/slice",
+          },
+          {
+            text: "字符串",
+            link: "/basic/advanced_type/string",
           },
           {
             text: "结构体",
@@ -193,10 +197,6 @@ export default [
         text: "原子操作",
         link: "/more/atomic",
       },
-      // {
-      //   text: "WASM",
-      //   link: "/more/wasm",
-      // },
       {
         text: "未定义行为",
         link: "/more/undefined_behavior",
@@ -221,12 +221,34 @@ export default [
     ],
   },
   {
+    text: "版本说明",
+    collapsed: true,
+    items: [
+      {
+        text: "0.12.0 升级指南",
+        link: "/update/upgrade-0.12.0",
+      },
+      {
+        text: "0.12.0 版本说明",
+        link: "/update/0.12.0-description",
+      },
+      {
+        text: "0.13.0 升级指南",
+        link: "/update/upgrade-0.13.0",
+      },
+      {
+        text: "0.13.0 版本说明",
+        link: "/update/0.13.0-description",
+      },
+    ],
+  },
+  {
     text: "附录",
     items: [
-      // {
-      //   text: "后记",
-      //   link: "/epilogue",
-      // },
+      {
+        text: "贡献者公约",
+        link: "/appendix/contributor-covenant",
+      },
       {
         text: "社区",
         link: "/appendix/community",

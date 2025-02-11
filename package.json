@@ -1,17 +1,19 @@
 {
   "scripts": {
-    "format": "prettier --write .",
+    "format": "prettier --write . && zig fmt . --exclude zig-out && autocorrect --fix",
     "dev": "vitepress dev course",
     "build": "vitepress build course",
     "preview": "vitepress preview course",
-    "check": "prettier --check ."
+    "check": "prettier --check .",
+    "export-pdf": "press-export-pdf export course"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "prettier": "^3.0.3",
-    "vitepress": "^1.0.0-rc.44"
+    "@types/node": "^20.17.16",
+    "prettier": "^3.4.2",
+    "vitepress": "^1.6.3",
+    "vitepress-export-pdf": "^1.0.0"
   },
   "dependencies": {
-    "@giscus/vue": "^3.0.0"
+    "@giscus/vue": "^3.1.1"
   }
 }

@@ -13,13 +13,13 @@ outline: deep
 
 ::: details windows 输出中文乱码问题
 
-如果你是中文简体用户，那么建议将 windows 的编码修改为UTF-8编码，由于 zig 的源代码编码格式是 UTF-8，导致在windows下向控制台打印输出中文会发生乱码的现象。
+如果你是中文简体用户，那么建议将 windows 的编码修改为 UTF-8 编码，由于 zig 的源代码编码格式是 UTF-8，导致在 windows 下向控制台打印输出中文会发生乱码的现象。
 
 修改方法为：
 
 1. 打开 windows 设置中的 **时间和语言**，进入 **语言和区域**。
 2. 点击下方的管理语言设置，在新打开的窗口中点击 **管理**。
-3. 点击下方的 **更改系统区域设置**，勾选下方的 “使用 unicode UTF-8 提供全球语言支持”
+3. 点击下方的 **更改系统区域设置**，勾选下方的“使用 unicode UTF-8 提供全球语言支持”
 4. 重启计算机。
 
 :::
@@ -45,8 +45,10 @@ scoop install versions/zig-dev
 :::
 
 ::: info 🅿️ 提示
-在使用 Scoop 时，推荐将 Zig 作为 global 安装，这样 Zig 会被自动添加进环境变量。
-:::
+
+- 使用 `scoop reset zig-dev` 或者 `scoop reset zig` 可以从 nightly 和 release 版本相互切换
+- 使用 `scoop install zig@0.11.0` 可以安装指定版本的 zig，同理 `scoop reset zig@0.11.0` 也能切换到指定版本！
+  :::
 
 ### 其他的包管理器
 
@@ -66,7 +68,7 @@ choco install zig
 
 ### 手动安装
 
-通过官方的[发布页面](https://ziglang.org/zh/download/)下载对应的 Zig 版本，普通用户选择 `zig-windows-x86_64` 即可。
+通过官方的 [发布页面](https://ziglang.org/zh/download/) 下载对应的 Zig 版本，普通用户选择 `zig-windows-x86_64` 即可。
 
 执行以下命令：
 
@@ -75,7 +77,8 @@ choco install zig
 ```powershell [System]
 [Environment]::SetEnvironmentVariable(
    "Path",
-   [Environment]::GetEnvironmentVariable("Path", "Machine") + ";C:\your-path\zig-windows-x86_64-your-version",
+   [Environment]::GetEnvironmentVariable("Path", "Machine")
+   + ";C:\your-path\zig-windows-x86_64-your-version",
    "Machine"
 )
 ```
@@ -83,7 +86,8 @@ choco install zig
 ```powershell [User]
 [Environment]::SetEnvironmentVariable(
    "Path",
-   [Environment]::GetEnvironmentVariable("Path", "User") + ";C:\your-path\zig-windows-x86_64-your-version",
+   [Environment]::GetEnvironmentVariable("Path", "User")
+   + ";C:\your-path\zig-windows-x86_64-your-version",
    "User"
 )
 ```
@@ -98,7 +102,7 @@ choco install zig
 
 ## Mac
 
-Mac安装 zig 就很方便，但是如果要使用 `nightly` ，还是需要自行下载并添加环境变量
+Mac 安装 zig 就很方便，但是如果要使用 `nightly` ，还是需要自行下载并添加环境变量
 
 ::: code-group
 
@@ -114,7 +118,7 @@ port install zig
 
 ## Linux
 
-Linux安装的话， 由于发行版的不同，安装的方式五花八门，先列出通过包管理器安装 Zig 的方法，再说明如何手动安装 Zig 并设置环境变量。
+Linux 安装的话，由于发行版的不同，安装的方式五花八门，先列出通过包管理器安装 Zig 的方法，再说明如何手动安装 Zig 并设置环境变量。
 
 ### 包管理器安装
 
@@ -142,7 +146,7 @@ Linux安装的话， 由于发行版的不同，安装的方式五花八门，�
 
 - [marler8997/zigup](https://github.com/marler8997/zigup): Download and manage zig compilers
 - [tristanisham/zvm](https://github.com/tristanisham/zvm): Lets you easily install/upgrade between different versions of Zig
-- [hendriknielaender/zvm](https://github.com/hendriknielaender/zvm): Fast and
+- [hendriknielaender/zvm](https://github.com/hendriknielaender/zvm): Fast and simple zig version manager
 
 读者可根据自身需求选择，这里介绍一个通用的版本管理工具：[asdf](https://asdf-vm.com/)。
 
